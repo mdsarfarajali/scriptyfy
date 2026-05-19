@@ -1,0 +1,29 @@
+[
+  {
+    "id": "1779172774790",
+    "title": "Your Liver Is Under Attack",
+    "category": "Health & Science",
+    "platform": "Short-form vertical",
+    "duration": "55 seconds",
+    "hook": "Fatty liver disease is not just about what you eat. The most dangerous window is while you sleep.",
+    "researchSource": "Oxford University - Cell Metabolism, Mar 2026",
+    "researchUrl": "",
+    "creatorNotes": "",
+    "coverImage": "/placeholder.png",
+    "scriptContent": [
+      {
+        "time": "0:00 - 0:07",
+        "visual": "Creator visible in near-darkness - only refrigerator light or a single lamp. Clock or phone shows 11 PM. No food props needed; the setting does the work. Hold the frame for a beat before speaking. No music intro - silence first.",
+        "audio": "Fatty liver disease is not just about what you eat. A study out of Oxford, published in March 2026, found it is primarily about when your liver processes fat - and the most dangerous window is while you sleep.",
+        "text": "Not what you eat.\nWhen you eat.\nOxford - Mar 2026"
+      },
+      {
+        "time": "0:07 - 0:18",
+        "visual": "Talking head under cool-toned blue light - reinforces the nighttime frame. Keep any graphic minimal and text-light.",
+        "audio": "Here is the mechanism. Your liver's fat production is circadian - it naturally ramps up at night, while insulin sensitivity drops. Eating in that window overloads a system that was designed to be in recovery mode, not processing mode.",
+        "text": "Liver fat peaks at night\nInsulin sensitivity - lowest\nCircadian mismatch"
+      }
+    ],
+    "rawScriptText": "0:00 - 0:07\r\nScene 1 - Cold open / hook\r\nVisual direction\r\nCreator visible in near-darkness - only refrigerator light or a single lamp. Clock or phone shows 11 PM. No food props needed; the setting does the work. Hold the frame for a beat before speaking. No music intro - silence first.\r\nVoiceover\r\n\"Fatty liver disease is not just about what you eat. A study out of Oxford, published in March 2026, found it is primarily about when your liver processes fat - and the most dangerous window is while you sleep.\"\r\nOn-screen overlay\r\nNot what you eat.\r\nWhen you eat.\r\nOxford - Mar 2026\r\n\r\n0:07 - 0:18\r\nScene 2 - The science (circadian mechanism)\r\nVisual direction\r\nTalking head under cool-toned blue light - reinforces the nighttime frame. Keep any graphic minimal and text-light.\r\nVoiceover\r\n\"Here is the mechanism. Your liver's fat production is circadian - it naturally ramps up at night, while insulin sensitivity drops. Eating in that window overloads a system that was designed to be in recovery mode, not processing mode.\"\r\nOn-screen overlay\r\nLiver fat peaks at night\r\nInsulin sensitivity - lowest\r\nCircadian mismatch"
+  }
+]

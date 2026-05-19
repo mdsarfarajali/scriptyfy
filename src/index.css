@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Luxurious Organic Minimalist Theme */
+  --bg-primary: #FAF9F6;         /* Pearl Stone Plaster */
+  --bg-secondary: #FFFFFF;       /* Pure White */
+  --text-primary: #09090B;       /* Pure Charcoal */
+  --text-secondary: #52525B;     /* Deep Muted Zinc */
+  --text-muted: #A1A1AA;         /* Clean Silver Muted Zinc */
+  
+  /* Brand Organic Color */
+  --accent-green: #1B4332;       /* Deep Organic Forest Green */
+  --accent-green-hover: #112A1F;
+  --border-color: #E4E4E7;       /* Extremely fine light border */
+  --border-hover: #71717A;       
+  
+  /* Luxury Flat Panels (No heavy shadows, architectural outline look) */
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: #E4E4E7;
+  --glass-border-hover: #D4D4D8;
+  --glass-blur: none;
+  --glass-shadow: none; 
+  
+  /* High-end Editorial Typography */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  --transition-smooth: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.7;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #E4E4E7;
+  border-radius: 100px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
+}
+
+/* Global App Container with Architectural Grid borders */
+#root {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3rem;
+  position: relative;
+}
+
+/* Vertical architectural borders running down the sides of the layout */
+#root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3rem;
+  right: 3rem;
+  bottom: 0;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  #root {
+    padding: 0 1.5rem;
+  }
+  #root::before {
+    left: 1.5rem;
+    right: 1.5rem;
+  }
+}
+
+/* Luxurious Outline Cards */
+.glass-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: none;
+  transition: var(--transition-smooth);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.02);
+}
+
+/* Minimalist Inline Links / CTAs instead of bulky solid buttons */
+.btn-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.btn-text-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--text-primary);
+  transform: scaleX(0.2);
+  transform-origin: left;
+  transition: var(--transition-smooth);
+}
+
+.btn-text-link:hover {
+  color: var(--accent-green);
+}
+
+.btn-text-link:hover::after {
+  background: var(--accent-green);
+  transform: scaleX(1);
+}
+
+button {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: var(--transition-smooth);
+}
+
+/* Clean, Airy Editorial Typography */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+  font-weight: 300;               /* Luxurious light-weight typography */
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.gradient-text {
+  /* Editorial luxury favors pure charcoal rather than rainbow gradients */
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+  color: var(--text-primary);
+}
