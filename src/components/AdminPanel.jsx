@@ -1,98 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 
 export default function AdminPanel({ onBack }) {
   const [formData, setFormData] = useState({
-    title: '',
-    category: 'Health & Science',
-    researchSource: '',
-    researchUrl: '',
-    scriptText: ''
+    title: "",
+    category: "Health & Science",
+    researchSource: "",
+    scriptText: "",
   });
 
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [scriptFile, setScriptFile] = useState(null);
   const [parsedSummary, setParsedSummary] = useState(null);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [status, setStatus] = useState({ type: "", message: "" });
   const [loading, setLoading] = useState(false);
+  const [existingScripts, setExistingScripts] = useState([]);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+  const fetchExistingScripts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/scripts`);
+      if (response.ok) {
+        const data = await response.json();
+        setExistingScripts(data);
+      }
+    } catch (err) {
+      console.error("Error fetching scripts in admin:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchExistingScripts();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete this script? This action cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/scripts/${id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to delete");
+      }
+      setStatus({ type: "success", message: "✓ Script successfully deleted!" });
+      fetchExistingScripts();
+    } catch (err) {
+      console.error(err);
+      setStatus({ type: "error", message: `Delete failed: ${err.message}` });
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.match('image.*')) {
-        setStatus({ type: 'error', message: 'Only image files are supported!' });
+      if (!file.type.match("image.*")) {
+        setStatus({
+          type: "error",
+          message: "Only image files are supported!",
+        });
         return;
       }
       setCoverFile(file);
       setCoverPreview(URL.createObjectURL(file));
-      setStatus({ type: 'success', message: 'Cover art selected successfully.' });
+      setStatus({
+        type: "success",
+        message: "Cover art selected successfully.",
+      });
     }
   };
 
   // Helper parser strictly to show live analysis feedback to user
   const analyzeScriptText = (text) => {
-    const lines = text.split('\n').map(l => l.trim());
+    const lines = text.split("\n").map((l) => l.trim());
     let sceneCount = 0;
     let voWords = 0;
     let overlayLines = 0;
 
     const timeRegex = /^(\d+:\d+)\s*[–-]\s*(\d+:\d+)$/;
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       if (timeRegex.test(line)) sceneCount++;
-      if (line.startsWith('"') || line.includes('Voiceover') || line.includes('VO:')) {
-        voWords += line.split(' ').length;
+      if (
+        line.startsWith('"') ||
+        line.includes("Voiceover") ||
+        line.includes("VO:")
+      ) {
+        voWords += line.split(" ").length;
       }
-      if (line.includes('On-screen overlay') || line.includes('OVERLAY:')) {
+      if (line.includes("On-screen overlay") || line.includes("OVERLAY:")) {
         overlayLines++;
       }
     });
 
     return {
       scenes: sceneCount || 1,
-      voWordCount: voWords || Math.round(text.split(' ').length * 0.6),
-      overlays: overlayLines || Math.round(lines.length / 8)
+      voWordCount: voWords || Math.round(text.split(" ").length * 0.6),
+      overlays: overlayLines || Math.round(lines.length / 8),
     };
   };
 
   const handleScriptFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.type !== 'text/plain' && !file.name.endsWith('.txt')) {
-        setStatus({ type: 'error', message: 'Only standard text (.txt) files are supported!' });
+      if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
+        setStatus({
+          type: "error",
+          message: "Only standard text (.txt) files are supported!",
+        });
         return;
       }
       setScriptFile(file);
-      
+
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target.result;
-        setFormData(prev => ({ ...prev, scriptText: text }));
-        
+        setFormData((prev) => ({ ...prev, scriptText: text }));
+
         // Auto-extract Title & Source
-        const lines = text.split('\n');
-        let extractedTitle = file.name.replace('.txt', '');
+        const lines = text.split("\n");
+        let extractedTitle = file.name.replace(".txt", "");
         if (lines.length > 0 && lines[0].trim()) {
           extractedTitle = lines[0].trim();
         }
 
-        const researchLine = lines.find(l => l.includes('Oxford') || l.includes('Research') || l.includes('Primary:'));
-        const extractedSource = researchLine ? researchLine.trim() : '';
+        const researchLine = lines.find(
+          (l) =>
+            l.includes("Oxford") ||
+            l.includes("Research") ||
+            l.includes("Primary:"),
+        );
+        let extractedSource = researchLine ? researchLine.trim() : "";
+        if (extractedSource) {
+          extractedSource = extractedSource
+            .replace(/\s*(Study \d+)/gi, (match, p1, offset) =>
+              offset === 0 ? p1 : "\n" + p1,
+            )
+            .trim();
+        }
 
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           title: prev.title || extractedTitle,
-          researchSource: prev.researchSource || extractedSource
+          researchSource: prev.researchSource || extractedSource,
         }));
 
         // Generate dynamic visual analysis HUD metrics
         setParsedSummary(analyzeScriptText(text));
-        setStatus({ type: 'success', message: '✓ Script read and analyzed in background.' });
+        setStatus({
+          type: "success",
+          message: "✓ Script read and analyzed in background.",
+        });
       };
       reader.readAsText(file);
     }
@@ -100,50 +171,71 @@ export default function AdminPanel({ onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.scriptText) {
-      setStatus({ type: 'error', message: 'Please upload a script file (.txt) and enter a title.' });
+    if (!formData.title || !scriptFile) {
+      setStatus({
+        type: "error",
+        message: "Please upload a script file (.txt) and enter a title.",
+      });
       return;
     }
 
     setLoading(true);
-    setStatus({ type: 'info', message: 'Uploading script details and saving files...' });
+    setStatus({
+      type: "info",
+      message: "Uploading script details and saving files...",
+    });
+
+    const formattedResearch = formData.researchSource
+      ? formData.researchSource
+          .replace(/\s*(Study \d+)/gi, (match, p1, offset) =>
+            offset === 0 ? p1 : "\n" + p1,
+          )
+          .trim()
+      : "";
 
     const submissionData = new FormData();
-    Object.keys(formData).forEach(key => {
-      submissionData.append(key, formData[key]);
-    });
+    submissionData.append("title", formData.title);
+    submissionData.append("category", formData.category);
+    submissionData.append("researchSource", formattedResearch);
+
     if (coverFile) {
-      submissionData.append('coverImage', coverFile);
+      submissionData.append("coverImage", coverFile);
+    }
+    if (scriptFile) {
+      submissionData.append("scriptFile", scriptFile);
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/upload', {
-        method: 'POST',
-        body: submissionData
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: "POST",
+        body: submissionData,
       });
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || 'Server error occurred');
+        throw new Error(result.error || "Server error occurred");
       }
 
-      setStatus({ type: 'success', message: '✓ Published successfully! Added to your live showcase.' });
-      
+      setStatus({
+        type: "success",
+        message: "✓ Published successfully! Added to your live showcase.",
+      });
+
       // Reset form
       setFormData({
-        title: '',
-        category: 'Health & Science',
-        researchSource: '',
-        researchUrl: '',
-        scriptText: ''
+        title: "",
+        category: "Health & Science",
+        researchSource: "",
+        scriptText: "",
       });
       setCoverFile(null);
       setCoverPreview(null);
       setScriptFile(null);
       setParsedSummary(null);
+      fetchExistingScripts();
     } catch (err) {
       console.error(err);
-      setStatus({ type: 'error', message: `Upload failed: ${err.message}` });
+      setStatus({ type: "error", message: `Upload failed: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -152,7 +244,6 @@ export default function AdminPanel({ onBack }) {
   return (
     <div className="admin-dark-theme">
       <div className="admin-container">
-        
         {/* Dashboard Navbar */}
         <header className="admin-header">
           <div className="header-meta">
@@ -166,32 +257,40 @@ export default function AdminPanel({ onBack }) {
 
         {status.message && (
           <div className={`status-banner-dark ${status.type}`}>
-            {status.type === 'success' ? '⚡' : status.type === 'error' ? '⚠' : 'ℹ'} {status.message}
+            {status.type === "success"
+              ? "⚡"
+              : status.type === "error"
+                ? "⚠"
+                : "ℹ"}{" "}
+            {status.message}
           </div>
         )}
 
         <form className="admin-form" onSubmit={handleSubmit}>
           <div className="dashboard-grid">
-            
             {/* Left Control Panel: Metadata Form */}
             <div className="dashboard-card form-card">
               <h2 className="card-heading">01. Metadata Controller</h2>
-              
+
               <div className="input-group">
                 <label>Speech Title *</label>
-                <input 
-                  type="text" 
-                  name="title" 
-                  value={formData.title} 
-                  onChange={handleInputChange} 
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
                   placeholder="e.g. Your Liver Is Under Attack"
-                  required 
+                  required
                 />
               </div>
 
               <div className="input-group">
                 <label>Vibe Category</label>
-                <select name="category" value={formData.category} onChange={handleInputChange}>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                >
                   <option value="Health & Science">Health & Science</option>
                   <option value="Motivational">Motivational</option>
                 </select>
@@ -199,23 +298,13 @@ export default function AdminPanel({ onBack }) {
 
               <div className="input-group">
                 <label>Research Anchor Source</label>
-                <input 
-                  type="text" 
-                  name="researchSource" 
-                  value={formData.researchSource} 
-                  onChange={handleInputChange} 
-                  placeholder="e.g. Oxford University — Cell Metabolism, Mar 2026"
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Research Paper Link</label>
-                <input 
-                  type="url" 
-                  name="researchUrl" 
-                  value={formData.researchUrl} 
-                  onChange={handleInputChange} 
-                  placeholder="https://pubmed.ncbi.nlm.nih.gov/study-id"
+                <textarea
+                  name="researchSource"
+                  value={formData.researchSource}
+                  onChange={handleInputChange}
+                  placeholder="e.g.&#10;Study 1 (Primary): Oxford University...&#10;Study 2 (Supporting): UCSD..."
+                  rows={4}
+                  style={{ resize: "vertical" }}
                 />
               </div>
             </div>
@@ -228,25 +317,41 @@ export default function AdminPanel({ onBack }) {
               <div className="input-group">
                 <label>Cover Art / Visual Thumbnail</label>
                 <div className="dark-upload-box">
-                  <input 
-                    type="file" 
-                    id="coverDarkInput" 
-                    accept="image/*" 
-                    onChange={handleImageChange} 
-                    style={{ display: 'none' }}
+                  <input
+                    type="file"
+                    id="coverDarkInput"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: "none" }}
                   />
                   {coverPreview ? (
                     <div className="dark-preview-wrapper">
-                      <img src={coverPreview} alt="Cover Preview" className="dark-image-preview" />
-                      <button type="button" className="btn-remove-dark" onClick={() => { setCoverFile(null); setCoverPreview(null); }}>
+                      <img
+                        src={coverPreview}
+                        alt="Cover Preview"
+                        className="dark-image-preview"
+                      />
+                      <button
+                        type="button"
+                        className="btn-remove-dark"
+                        onClick={() => {
+                          setCoverFile(null);
+                          setCoverPreview(null);
+                        }}
+                      >
                         Remove Asset
                       </button>
                     </div>
                   ) : (
-                    <label htmlFor="coverDarkInput" className="dark-upload-label">
+                    <label
+                      htmlFor="coverDarkInput"
+                      className="dark-upload-label"
+                    >
                       <span className="upload-icon">🏞️</span>
                       <span className="upload-text">Upload Cover Art</span>
-                      <span className="upload-hint">Click to browse visual posters</span>
+                      <span className="upload-hint">
+                        Click to browse visual posters
+                      </span>
                     </label>
                   )}
                 </div>
@@ -256,17 +361,27 @@ export default function AdminPanel({ onBack }) {
               <div className="input-group">
                 <label>Speech Script File (.txt) *</label>
                 <div className="dark-upload-box">
-                  <input 
-                    type="file" 
-                    id="scriptDarkInput" 
-                    accept=".txt" 
-                    onChange={handleScriptFileChange} 
-                    style={{ display: 'none' }}
+                  <input
+                    type="file"
+                    id="scriptDarkInput"
+                    accept=".txt"
+                    onChange={handleScriptFileChange}
+                    style={{ display: "none" }}
                   />
-                  <label htmlFor="scriptDarkInput" className="dark-upload-label">
+                  <label
+                    htmlFor="scriptDarkInput"
+                    className="dark-upload-label"
+                  >
                     <span className="upload-icon">📂</span>
-                    <span className="upload-text">{scriptFile ? scriptFile.name : "Select Script Text Document"}</span>
-                    <span className="upload-hint">The system will parse scenes and voiceovers in the background</span>
+                    <span className="upload-text">
+                      {scriptFile
+                        ? scriptFile.name
+                        : "Select Script Text Document"}
+                    </span>
+                    <span className="upload-hint">
+                      The system will parse scenes and voiceovers in the
+                      background
+                    </span>
                   </label>
                 </div>
               </div>
@@ -276,7 +391,9 @@ export default function AdminPanel({ onBack }) {
                 <div className="parsed-summary-hud">
                   <div className="hud-header">
                     <span className="hud-dot animate-pulse"></span>
-                    <span className="hud-title">REAL-TIME TEXT PARSING ACTIVE</span>
+                    <span className="hud-title">
+                      REAL-TIME TEXT PARSING ACTIVE
+                    </span>
                   </div>
                   <div className="hud-stats">
                     <div className="hud-stat-item">
@@ -284,30 +401,94 @@ export default function AdminPanel({ onBack }) {
                       <span className="hud-label">SCENES DETECTED</span>
                     </div>
                     <div className="hud-stat-item">
-                      <span className="hud-value">{parsedSummary.voWordCount}</span>
+                      <span className="hud-value">
+                        {parsedSummary.voWordCount}
+                      </span>
                       <span className="hud-label">VOICEOVER WORDS</span>
                     </div>
                     <div className="hud-stat-item">
-                      <span className="hud-value">{parsedSummary.overlays}</span>
+                      <span className="hud-value">
+                        {parsedSummary.overlays}
+                      </span>
                       <span className="hud-label">TEXT OVERLAYS</span>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-
           </div>
 
           <div className="submit-panel">
-            <button type="submit" className="btn-submit-console" disabled={loading}>
+            <button
+              type="submit"
+              className="btn-submit-console"
+              disabled={loading}
+            >
               {loading ? "PROCESSING..." : "PUBLISH TO SHOWCASE →"}
             </button>
           </div>
         </form>
 
+        {/* Showcase Manager Section */}
+        <section className="showcase-manager-section">
+          <h2 className="card-heading manager-heading">
+            03. Live Showcase Manager
+          </h2>
+          <div className="manager-grid">
+            {existingScripts.length === 0 ? (
+              <div className="empty-manager-state">
+                <span className="empty-icon">📂</span>
+                <p>
+                  No active scripts in database. Upload your first script to get
+                  started.
+                </p>
+              </div>
+            ) : (
+              existingScripts.map((script) => (
+                <div key={script.id} className="manager-card">
+                  <div className="manager-card-content">
+                    <div className="manager-thumbnail-container">
+                      <img
+                        src={
+                          script.coverImage.startsWith("/uploads/")
+                            ? `${API_URL}${script.coverImage}`
+                            : script.coverImage
+                        }
+                        alt={script.title}
+                        className="manager-thumbnail"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=300&q=80";
+                        }}
+                      />
+                    </div>
+                    <div className="manager-info">
+                      <span className="manager-badge">{script.category}</span>
+                      <h3 className="manager-card-title">{script.title}</h3>
+                      {script.researchSource && (
+                        <p className="manager-source">
+                          🔬 {script.researchSource}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-delete-post"
+                    onClick={() => handleDelete(script.id)}
+                  >
+                    Remove Post
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         /* Dedicated Dark Console Theme */
         .admin-dark-theme {
           background-color: #09090B;
@@ -442,7 +623,8 @@ export default function AdminPanel({ onBack }) {
         }
 
         .input-group input,
-        .input-group select {
+        .input-group select,
+        .input-group textarea {
           background: #09090B;
           border: 1px solid #27272A;
           border-radius: 6px;
@@ -451,10 +633,12 @@ export default function AdminPanel({ onBack }) {
           font-size: 0.9rem;
           outline: none;
           transition: all 0.3s;
+          font-family: inherit;
         }
 
         .input-group input:focus,
-        .input-group select:focus {
+        .input-group select:focus,
+        .input-group textarea:focus {
           border-color: #10B981;
           box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1);
         }
@@ -626,13 +810,137 @@ export default function AdminPanel({ onBack }) {
           box-shadow: none;
         }
 
+        /* Live Showcase Manager styles */
+        .showcase-manager-section {
+          margin-top: 5rem;
+          background: #121214;
+          border: 1px solid #1E1E24;
+          border-radius: 12px;
+          padding: 2.5rem;
+        }
+
+        .manager-heading {
+          margin-bottom: 2rem;
+        }
+
+        .manager-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .empty-manager-state {
+          text-align: center;
+          padding: 3rem 0;
+          color: #71717A;
+        }
+
+        .empty-icon {
+          font-size: 2.5rem;
+          display: block;
+          margin-bottom: 1rem;
+        }
+
+        .manager-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #09090B;
+          border: 1px solid #1E1E24;
+          border-radius: 8px;
+          padding: 1rem 1.5rem;
+          transition: all 0.3s ease;
+        }
+
+        .manager-card:hover {
+          border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .manager-card-content {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        .manager-thumbnail-container {
+          width: 60px;
+          height: 60px;
+          border-radius: 6px;
+          overflow: hidden;
+          background: #121214;
+          border: 1px solid #1E1E24;
+        }
+
+        .manager-thumbnail {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .manager-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .manager-badge {
+          font-family: monospace;
+          font-size: 0.65rem;
+          color: #10B981;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .manager-card-title {
+          font-size: 1.05rem;
+          font-weight: 400;
+          color: #FAFAFA;
+        }
+
+        .manager-source {
+          font-size: 0.75rem;
+          color: #71717A;
+        }
+
+        .btn-delete-post {
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          color: #F87171;
+          font-family: monospace;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-delete-post:hover {
+          background: #EF4444;
+          color: #FFFFFF;
+          border-color: #EF4444;
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+
         @media (max-width: 768px) {
           .dashboard-grid {
             grid-template-columns: 1fr;
             gap: 2.5rem;
           }
+          .manager-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+          }
+          .btn-delete-post {
+            width: 100%;
+            text-align: center;
+          }
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }

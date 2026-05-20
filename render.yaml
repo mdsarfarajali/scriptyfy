@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: scripts-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: scripts-data
+      mountPath: /data
+      sizeGB: 1

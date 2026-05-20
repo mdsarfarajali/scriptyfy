@@ -1,49 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import Hero from './components/Hero';
-import CategoryNav from './components/CategoryNav';
-import ScriptShowcase from './components/ScriptShowcase';
-import AdminPanel from './components/AdminPanel';
+import React, { useState, useEffect } from "react";
+import Hero from "./components/Hero";
+import CategoryNav from "./components/CategoryNav";
+import ScriptShowcase from "./components/ScriptShowcase";
+import AdminPanel from "./components/AdminPanel";
+import FullScriptView from "./components/FullScriptView";
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [scripts, setScripts] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(window.location.hash === '#admin');
+  const [isAdmin, setIsAdmin] = useState(window.location.hash === "#admin");
+  const [selectedScriptId, setSelectedScriptId] = useState(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
   // Listen to hash changes for simple routing
   useEffect(() => {
     const handleHashChange = () => {
-      setIsAdmin(window.location.hash === '#admin');
+      setIsAdmin(window.location.hash === "#admin");
+      const hash = window.location.hash;
+      if (hash.startsWith("#script/")) {
+        setSelectedScriptId(hash.replace("#script/", ""));
+      } else {
+        setSelectedScriptId(null);
+      }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Run on mount to catch deep links
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
   // Fetch scripts dynamically from local backend server
   useEffect(() => {
     const fetchScripts = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/scripts');
+        const response = await fetch(`${API_URL}/api/scripts`);
         if (response.ok) {
           const data = await response.json();
           setScripts(data);
         }
       } catch (err) {
-        console.warn("Backend server not running. Falling back to local offline state.");
+        console.warn(
+          "Backend server not running. Falling back to local offline state.",
+        );
       }
     };
     fetchScripts();
-  }, [isAdmin]); // Refetch when returning from admin panel
+  }, [isAdmin, selectedScriptId]); // Refetch when returning from admin or script details
 
   const categories = ["All", "Health & Science", "Motivational"];
 
-  const filteredScripts = activeCategory === "All"
-    ? scripts
-    : scripts.filter(script => script.category === activeCategory);
+  const filteredScripts =
+    activeCategory === "All"
+      ? scripts
+      : scripts.filter((script) => script.category === activeCategory);
+
+  const selectedScript = scripts.find((s) => s.id === selectedScriptId);
 
   const handleExploreClick = () => {
-    const el = document.getElementById('portfolio-section');
+    const el = document.getElementById("portfolio-section");
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      el.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -51,39 +67,74 @@ export default function App() {
     <div className="app-container">
       {/* Main Navbar */}
       <header className="main-navbar">
-        <div className="nav-logo" onClick={() => { window.location.hash = ''; }} style={{ cursor: 'pointer' }}>
+        <div
+          className="nav-logo"
+          onClick={() => {
+            window.location.hash = "";
+          }}
+          style={{ cursor: "pointer" }}
+        >
           <span className="logo-icon">⚡</span>
-          <span className="logo-text">Research<span className="gradient-text font-outfit">ToScript</span></span>
+          <span className="logo-text">
+            Research<span className="gradient-text font-outfit">ToScript</span>
+          </span>
         </div>
         <nav className="nav-links">
-          {isAdmin ? (
-            <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }}>Portfolio Showcase</a>
+          {isAdmin || selectedScriptId ? (
+            <a
+              href="#"
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.hash = "";
+              }}
+            >
+              Portfolio Showcase
+            </a>
           ) : (
             <>
-              <a href="#portfolio-section" className="nav-link">Portfolio</a>
-              <a href="#admin" className="nav-link nav-btn">Upload Script</a>
+              <a href="#portfolio-section" className="nav-link">
+                Portfolio
+              </a>
+              <a href="#admin" className="nav-link nav-btn">
+                Upload Script
+              </a>
             </>
           )}
         </nav>
       </header>
 
-      {/* Conditional view rendering: Admin Panel or Main Showcase */}
-      {isAdmin ? (
-        <AdminPanel onBack={() => { window.location.hash = ''; }} />
+      {/* Conditional view rendering: Full Script Page, Admin Panel, or Main Showcase */}
+      {selectedScriptId ? (
+        <FullScriptView
+          script={selectedScript}
+          onBack={() => {
+            window.location.hash = "";
+          }}
+        />
+      ) : isAdmin ? (
+        <AdminPanel
+          onBack={() => {
+            window.location.hash = "";
+          }}
+        />
       ) : (
         <>
           {/* Hero Component */}
           <Hero onExploreClick={handleExploreClick} />
 
           {/* Showcase Library Section */}
-          <section id="portfolio-section" className="portfolio-showcase-section">
-            <CategoryNav 
+          <section
+            id="portfolio-section"
+            className="portfolio-showcase-section"
+          >
+            <CategoryNav
               categories={categories}
               activeCategory={activeCategory}
               setActiveCategory={setActiveCategory}
               scriptsCount={scripts.length}
             />
-            
+
             <ScriptShowcase scripts={filteredScripts} />
           </section>
         </>
@@ -92,12 +143,24 @@ export default function App() {
       {/* Contact Call-To-Action Section */}
       <section id="contact-section" className="contact-section">
         <h2 className="contact-title">Ready to Dominate Short-Form?</h2>
-        <p className="contact-subtitle">Stop guessing hooks. Get hyper-researched, biologically validated scripts that hook your audience and convert them into absolute fans.</p>
-        <button className="btn-text-link" onClick={() => alert("Contact form integration coming soon! Make sure your research and scripts are saved.")}>
+        <p className="contact-subtitle">
+          Stop guessing hooks. Get hyper-researched, biologically validated
+          scripts that hook your audience and convert them into absolute fans.
+        </p>
+        <button
+          className="btn-text-link"
+          onClick={() =>
+            alert(
+              "Contact form integration coming soon! Make sure your research and scripts are saved.",
+            )
+          }
+        >
           Request Custom Speech Package →
         </button>
 
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           .contact-section {
             padding: 8rem 0;
             text-align: center;
@@ -121,15 +184,21 @@ export default function App() {
             margin: 0 auto 3rem;
             line-height: 1.7;
           }
-        `}} />
+        `,
+          }}
+        />
       </section>
 
       {/* Footer */}
       <footer className="footer-section">
-        <p>© 2026 ResearchToScript Portfolio. Built with scientific precision.</p>
+        <p>
+          © 2026 ResearchToScript Portfolio. Built with scientific precision.
+        </p>
       </footer>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .app-container {
           padding-top: 3rem;
           min-height: 100vh;
@@ -241,7 +310,9 @@ export default function App() {
             font-size: 0.75rem;
           }
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }
